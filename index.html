@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MindCare AI</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background: linear-gradient(to right,#dbeafe,#e0f7fa);
+}
+.screen { display:none; padding:20px; text-align:center;}
+.card {
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  margin:15px auto;
+  width:90%;
+  max-width:420px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+}
+input,select {
+  width:90%;
+  padding:10px;
+  margin:8px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+button {
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  background:#2563eb;
+  color:white;
+  font-size:15px;
+  cursor:pointer;
+}
+h1 {color:#1e3a8a;}
+label {font-size:14px; display:block; margin-top:10px;}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="screen" style="display:block;">
+  <div class="card">
+    <h2>MindCare AI Login</h2>
+    <input placeholder="Username">
+    <input type="password" placeholder="Password">
+    <button onclick="show('home')">Login</button>
+  </div>
+</div>
+
+<!-- HOME -->
+<div id="home" class="screen">
+  <h1>How is your mind today?</h1>
+  <div class="card">
+    <p>Track your mental health daily and get AI insights</p>
+    <button onclick="show('form')">Start Assessment</button>
+  </div>
+
+  <div class="card">
+    <h3>30 Days Stress Trend</h3>
+    <canvas id="trendChart"></canvas>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="form" class="screen">
+  <h1>Mental Health Assessment</h1>
+
+  <div class="card">
+
+    <label>1. How many hours do you sleep?</label>
+    <input id="sleep" type="number">
+
+    <label>2. Stress level (1-10)</label>
+    <input id="stress" type="number">
+
+    <label>3. Mood score (1-10)</label>
+    <input id="mood" type="number">
+
+    <label>4. Screen time (hours)</label>
+    <input id="screen" type="number">
+
+    <label>5. Physical activity</label>
+    <select id="activity">
+      <option>Low</option>
+      <option>Medium</option>
+      <option>High</option>
+    </select>
+
+    <label>6. Social interaction</label>
+    <select id="social">
+      <option>Low</option>
+      <option>Medium</option>
+      <option>High</option>
+    </select>
+
+    <label>7. Age</label>
+    <input id="age" type="number">
+
+    <label>8. Gender</label>
+    <select id="gender">
+      <option>Male</option>
+      <option>Female</option>
+    </select>
+
+    <button onclick="predict()">Submit Assessment</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="resultScreen" class="screen">
+  <h1>AI Prediction Result</h1>
+
+  <div class="card">
+    <h2 id="result"></h2>
+    <p id="confidence"></p>
+  </div>
+
+  <div class="card">
+    <h3>Detailed Analysis</h3>
+    <canvas id="barChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Risk Distribution</h3>
+    <canvas id="pieChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Health Trend</h3>
+    <canvas id="lineChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>Personalized Tips</h3>
+    <p id="tips"></p>
+  </div>
+
+  <button onclick="show('home')">Back to Home</button>
+</div>
+
+<script>
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
+  document.getElementById(id).style.display="block";
+  if(id==="home") loadTrend();
+}
+
+function predict(){
+
+  let sleep=+sleep.value;
+  let stress=+stress.value;
+  let mood=+mood.value;
+  let screen=+screen.value;
+
+  let result="", tips="", confidence="";
+
+  if(stress>7 && sleep<5){
+    result="High Risk";
+    confidence="Confidence: 90%";
+    tips="⚠️ High stress detected. Improve sleep, reduce workload, consult expert.";
+  }
+  else if(stress>5){
+    result="Medium Risk";
+    confidence="Confidence: 75%";
+    tips="⚠️ Moderate stress. Try meditation, reduce screen time.";
+  }
+  else{
+    result="Low Risk";
+    confidence="Confidence: 85%";
+    tips="✅ Healthy condition. Maintain your routine.";
+  }
+
+  resultEl.innerText=result;
+  confidenceEl.innerText=confidence;
+  tipsEl.innerText=tips;
+
+  // Save data
+  let data=JSON.parse(localStorage.getItem("mindData")||"[]");
+  data.push({date:new Date().toLocaleDateString(),stress});
+  localStorage.setItem("mindData",JSON.stringify(data));
+
+  // Charts
+  new Chart(barChart,{type:'bar',
+    data:{labels:["Sleep","Stress","Mood","Screen"],
+    datasets:[{label:"Inputs",data:[sleep,stress,mood,screen]}]}});
+
+  new Chart(pieChart,{type:'pie',
+    data:{labels:["Low","Medium","High"],
+    datasets:[{data:[sleep,mood,stress]}]}});
+
+  new Chart(lineChart,{type:'line',
+    data:{labels:data.map(d=>d.date),
+    datasets:[{label:"Stress Trend",data:data.map(d=>d.stress)}]}});
+
+  show("resultScreen");
+}
+
+function loadTrend(){
+  let data=JSON.parse(localStorage.getItem("mindData")||"[]");
+  new Chart(trendChart,{
+    type:'line',
+    data:{
+      labels:data.map(d=>d.date),
+      datasets:[{label:"Stress Trend",data:data.map(d=>d.stress)}]
+    }
+  });
+}
+
+</script>
+
+</body>
+</html>
